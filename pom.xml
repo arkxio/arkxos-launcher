@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.arkx.os</groupId>
+  <artifactId>arkxos-launcher</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>arkxos-launcher</name>
+  <description>
+    ArkXOS 启动器：环境检测 / 下载安装 / 进程引导。
+    原为 arkxos-fleet-host/arkxos-fleet-boot（2026-10-11 迁出为独立仓），包名保持
+    io.arkx.os.fleet.app.boot 不变以减少断裂；后续计划以 GraalVM native 打包，使其在无 JDK
+    的机器上自举（见 fleet 仓 resources/design/BOOT-REDESIGN.md）。
+  </description>
+
+  <properties>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- 跨仓依赖版本（fleet 侧：bundle / command-core）。
+         ⛔ 不得写 ${project.version} —— 跨仓时它解析为本仓版本，本仓一升版即失配。
+         与 fleet 根 pom 的 arkxos.app.plugin.version 同理：用属性收口，跨仓版本只改这一行。 -->
+    <arkxos.fleet.version>0.1.0-SNAPSHOT</arkxos.fleet.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.arkx.os</groupId>
+      <artifactId>arkxos-fleet-bundle</artifactId>
+      <version>${arkxos.fleet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.arkx.os</groupId>
+      <artifactId>arkxos-fleet-command-core</artifactId>
+      <version>${arkxos.fleet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.4</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- fat jar：独立可执行程序（迁移前即为 fat jar，此处保持行为不变）
+           java -jar arkxos-launcher.jar [start|stop|switch|doctor|fetch|install] -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>io.arkx.os.fleet.app.boot.AppRunnerBoot</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
